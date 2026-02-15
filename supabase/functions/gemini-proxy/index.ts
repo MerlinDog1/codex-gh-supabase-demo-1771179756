@@ -26,7 +26,7 @@ serve(async (req) => {
       task = "text",
       prompt,
       model = "gemini-2.0-flash",
-      imageModel = "imagen-4.0-fast-generate-001",
+      imageModel = "gemini-3-pro-image-preview",
       aspectRatio = "16:9",
     } = await req.json();
     if (!prompt || typeof prompt !== "string") {
@@ -44,6 +44,41 @@ serve(async (req) => {
         });
       }
 
+      // Gemini image models (e.g. gemini-3-pro-image-preview) use generateContent.
+      if (imageModel.startsWith("gemini-")) {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(imageModel)}:generateContent?key=${imagenApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                responseModalities: ["TEXT", "IMAGE"],
+              },
+            }),
+          },
+        );
+
+        const data = await r.json();
+        if (!r.ok) {
+          return new Response(JSON.stringify({ error: data?.error?.message || "Gemini image request failed", raw: data }), {
+            status: r.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const inline = parts.find((p: any) => p?.inlineData?.data)?.inlineData;
+        const bytesBase64Encoded = inline?.data ?? "";
+        const mimeType = inline?.mimeType ?? "image/jpeg";
+        return new Response(JSON.stringify({ bytesBase64Encoded, mimeType, raw: data }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Imagen models use predict.
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(imageModel)}:predict?key=${imagenApiKey}`,
         {
@@ -65,7 +100,7 @@ serve(async (req) => {
       }
 
       const bytesBase64Encoded = data?.predictions?.[0]?.bytesBase64Encoded ?? "";
-      return new Response(JSON.stringify({ bytesBase64Encoded, raw: data }), {
+      return new Response(JSON.stringify({ bytesBase64Encoded, mimeType: "image/png", raw: data }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
