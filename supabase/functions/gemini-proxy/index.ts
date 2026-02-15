@@ -22,7 +22,13 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
     const imagenApiKey = Deno.env.get("IMAGEN_API_KEY") || geminiApiKey;
 
-    const { task = "text", prompt, model = "gemini-2.0-flash", aspectRatio = "16:9" } = await req.json();
+    const {
+      task = "text",
+      prompt,
+      model = "gemini-2.0-flash",
+      imageModel = "imagen-4.0-fast-generate-001",
+      aspectRatio = "16:9",
+    } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400,
@@ -39,7 +45,7 @@ serve(async (req) => {
       }
 
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${imagenApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(imageModel)}:predict?key=${imagenApiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
