@@ -3,47 +3,354 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Supabase Starter</title>
+  <title>Neon Guestbook Live</title>
   <style>
-    body{font-family:system-ui,sans-serif;max-width:680px;margin:40px auto;padding:0 16px}
-    input,button{padding:8px;margin:4px 0}
-    #out{white-space:pre-wrap;background:#f6f6f6;padding:12px;border-radius:8px}
+    :root{
+      --bg:#070b16;
+      --card:#0f1630cc;
+      --line:#2d3f74;
+      --text:#e8efff;
+      --muted:#9bb2e8;
+      --accent:#55d6ff;
+      --ok:#53f3be;
+      --warn:#ffcb6b;
+      --danger:#ff6b9a;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 85% -20%, #233988 0%, transparent 55%),
+        radial-gradient(1000px 700px at -10% 120%, #0e644f 0%, transparent 45%),
+        var(--bg);
+      min-height:100vh;
+    }
+    .wrap{max-width:980px;margin:24px auto;padding:0 14px 30px}
+    .hero{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+    h1{margin:0;font-size:clamp(1.4rem,4vw,2.2rem);letter-spacing:.3px}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:.95rem}
+    .pillrow{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{padding:6px 10px;border:1px solid var(--line);background:#0b1330b0;border-radius:999px;font-size:.8rem;color:#c6d5ff}
+    .grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
+    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      backdrop-filter:blur(10px);
+      box-shadow:0 10px 28px #00000055;
+    }
+    .composer{padding:14px}
+    label{display:block;font-size:.8rem;color:var(--muted);margin:8px 0 6px}
+    input,textarea,select,button{
+      font:inherit;color:var(--text)
+    }
+    input,textarea,select{
+      width:100%;
+      background:#0a122c;
+      border:1px solid #30416e;
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+    }
+    input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px #55d6ff22}
+    textarea{min-height:104px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 120px;gap:8px}
+    .btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    button{
+      border:1px solid #2e4f8a;
+      background:linear-gradient(180deg,#15316e,#10244f);
+      border-radius:12px;
+      padding:10px 12px;
+      cursor:pointer;
+    }
+    button:hover{filter:brightness(1.07)}
+    button.alt{background:#0d1634;border-color:#3a4f84}
+    button.warn{border-color:#80653a;background:#2d2315}
+    .meta{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:.8rem}
+    .status{margin-top:10px;padding:8px 10px;border:1px solid #35507f;border-radius:10px;background:#0a1535;color:#b6cbff;font-size:.86rem}
+
+    .feed{padding:12px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .toolbar input{flex:1;min-width:180px}
+    .toolbar .small{width:150px}
+    .list{display:flex;flex-direction:column;gap:9px;max-height:70vh;overflow:auto;padding-right:4px}
+    .item{
+      border:1px solid #314b85;
+      border-radius:14px;
+      background:#0a1434d8;
+      padding:10px 11px;
+    }
+    .head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .name{font-size:.9rem;color:#ccdcff;font-weight:600}
+    .time{font-size:.75rem;color:#94a9dc}
+    .body{margin-top:6px;white-space:pre-wrap;line-height:1.35}
+    .badge{font-size:.72rem;border:1px solid #4062a3;border-radius:999px;padding:2px 7px;color:#aad1ff;background:#0e1f46}
+    .hint{margin-top:9px;color:#90a8de;font-size:.82rem}
   </style>
 </head>
 <body>
-  <h1>Supabase Starter</h1>
-  <p>Set your project URL and anon key in the script below.</p>
-  <input id="msg" placeholder="Type a message" />
-  <button id="save">Save</button>
-  <button id="load">Load</button>
-  <div id="out"></div>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>Neon Guestbook Live</h1>
+        <div class="sub">Realtime anonymous vibe wall powered by Supabase + GitHub Pages.</div>
+      </div>
+      <div class="pillrow">
+        <div class="pill" id="conn">Connecting…</div>
+        <div class="pill" id="count">0 posts</div>
+        <div class="pill">Public demo</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card composer">
+        <label for="name">Nickname</label>
+        <input id="name" maxlength="30" placeholder="e.g. PixelWizard" />
+
+        <div class="row">
+          <div>
+            <label for="mood">Mood</label>
+            <select id="mood">
+              <option>🔥 hyped</option>
+              <option>😌 chill</option>
+              <option>🛠️ building</option>
+              <option>🤯 mindblown</option>
+              <option>🎯 focused</option>
+            </select>
+          </div>
+          <div>
+            <label for="theme">Theme</label>
+            <select id="theme">
+              <option value="neon">Neon</option>
+              <option value="mint">Mint</option>
+              <option value="sunset">Sunset</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="msg">Message</label>
+        <textarea id="msg" maxlength="280" placeholder="Drop a thought…"></textarea>
+        <div class="meta">
+          <span id="remaining">280 chars left</span>
+          <span>Enter = newline</span>
+        </div>
+
+        <div class="btns">
+          <button id="post">Post message</button>
+          <button class="alt" id="reload">Reload feed</button>
+          <button class="warn" id="clear">Clear local prefs</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+        <div class="hint">Schema-safe: messages are saved as JSON inside the existing <code>content</code> column, so no extra DB columns needed.</div>
+      </section>
+
+      <section class="card feed">
+        <div class="toolbar">
+          <input id="search" placeholder="Filter messages…" />
+          <select id="sort" class="small">
+            <option value="new">Newest first</option>
+            <option value="old">Oldest first</option>
+          </select>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+    </div>
+  </div>
 
   <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    const SUPABASE_URL = 'https://wbtpizrlayiedgwrtpwl.supabase.co'
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndidHBpenJsYXlpZWRnd3J0cHdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNzc2MjIsImV4cCI6MjA4Njc1MzYyMn0.IMErut0xME0kpL39XXjLnvD7_kxUCiTR1vqT5bCEUdg'
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const SUPABASE_URL = 'https://wbtpizrlayiedgwrtpwl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndidHBpenJsYXlpZWRnd3J0cHdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNzc2MjIsImV4cCI6MjA4Njc1MzYyMn0.IMErut0xME0kpL39XXjLnvD7_kxUCiTR1vqT5bCEUdg';
 
-    const out = document.getElementById('out')
-    const msg = document.getElementById('msg')
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.getElementById('save').onclick = async () => {
-      const text = msg.value.trim()
-      if (!text) return
-      const { error } = await supabase.from('messages').insert({ content: text })
-      out.textContent = error ? error.message : 'Saved.'
-      msg.value = ''
+    const el = (id) => document.getElementById(id);
+    const refs = {
+      name: el('name'), mood: el('mood'), msg: el('msg'), theme: el('theme'),
+      remaining: el('remaining'), status: el('status'), list: el('list'),
+      search: el('search'), sort: el('sort'), count: el('count'), conn: el('conn')
+    };
+
+    const state = { rows: [], channel: null };
+
+    function setStatus(text, tone='info') {
+      refs.status.textContent = text;
+      refs.status.style.borderColor = tone === 'ok' ? '#2d7a63' : tone === 'bad' ? '#8a3758' : '#35507f';
+      refs.status.style.color = tone === 'ok' ? '#9ef5d8' : tone === 'bad' ? '#ffb7ca' : '#b6cbff';
     }
 
-    document.getElementById('load').onclick = async () => {
+    function relTime(ts) {
+      const sec = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+      if (sec < 60) return `${sec}s ago`;
+      if (sec < 3600) return `${Math.floor(sec/60)}m ago`;
+      if (sec < 86400) return `${Math.floor(sec/3600)}h ago`;
+      return `${Math.floor(sec/86400)}d ago`;
+    }
+
+    function parseRow(row) {
+      const base = { name: 'guest', mood: '💬 message', text: row.content, created_at: row.created_at, id: row.id };
+      try {
+        const j = JSON.parse(row.content);
+        if (j && typeof j === 'object') {
+          return {
+            ...base,
+            name: String(j.name || base.name).slice(0, 30),
+            mood: String(j.mood || base.mood).slice(0, 20),
+            text: String(j.text || '').slice(0, 280) || base.text,
+          };
+        }
+      } catch {}
+      return base;
+    }
+
+    function draw() {
+      const q = refs.search.value.trim().toLowerCase();
+      const copy = [...state.rows].map(parseRow)
+        .filter(r => !q || r.text.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.mood.toLowerCase().includes(q));
+
+      copy.sort((a,b)=> refs.sort.value === 'new'
+        ? new Date(b.created_at)-new Date(a.created_at)
+        : new Date(a.created_at)-new Date(b.created_at));
+
+      refs.count.textContent = `${copy.length} posts`;
+      refs.list.innerHTML = '';
+      if (!copy.length) {
+        refs.list.innerHTML = '<div class="item">No messages yet. Be the first.</div>';
+        return;
+      }
+
+      for (const r of copy) {
+        const card = document.createElement('article');
+        card.className = 'item';
+        card.innerHTML = `
+          <div class="head">
+            <div class="name">${escapeHtml(r.name)}</div>
+            <div class="time">${relTime(r.created_at)}</div>
+          </div>
+          <div style="margin-top:6px"><span class="badge">${escapeHtml(r.mood)}</span></div>
+          <div class="body">${escapeHtml(r.text)}</div>
+        `;
+        refs.list.appendChild(card);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;');
+    }
+
+    async function loadFeed() {
+      setStatus('Loading feed…');
       const { data, error } = await supabase
         .from('messages')
-        .select('id, content, created_at')
-        .order('id', { ascending: false })
-        .limit(10)
-      out.textContent = error ? error.message : JSON.stringify(data, null, 2)
+        .select('id,content,created_at')
+        .order('created_at', { ascending: false })
+        .limit(120);
+      if (error) {
+        setStatus(`Load error: ${error.message}`, 'bad');
+        return;
+      }
+      state.rows = data || [];
+      draw();
+      setStatus('Feed loaded.', 'ok');
     }
+
+    async function postMessage() {
+      const text = refs.msg.value.trim();
+      if (!text) return setStatus('Write a message first.', 'bad');
+
+      const payload = {
+        name: (refs.name.value || 'guest').trim().slice(0,30),
+        mood: refs.mood.value,
+        text: text.slice(0,280),
+        v: 1
+      };
+
+      refs.msg.disabled = true;
+      setStatus('Posting…');
+      const { error } = await supabase.from('messages').insert({ content: JSON.stringify(payload) });
+      refs.msg.disabled = false;
+      if (error) return setStatus(`Post failed: ${error.message}`, 'bad');
+
+      refs.msg.value = '';
+      refs.remaining.textContent = '280 chars left';
+      setStatus('Posted. Realtime should appear instantly.', 'ok');
+    }
+
+    function applyTheme(v) {
+      const root = document.documentElement;
+      if (v === 'mint') {
+        root.style.setProperty('--accent','#53f3be');
+        root.style.setProperty('--line','#275f64');
+      } else if (v === 'sunset') {
+        root.style.setProperty('--accent','#ff8f6b');
+        root.style.setProperty('--line','#6f4356');
+      } else {
+        root.style.setProperty('--accent','#55d6ff');
+        root.style.setProperty('--line','#2d3f74');
+      }
+      localStorage.setItem('ngl_theme', v);
+    }
+
+    function restorePrefs() {
+      refs.name.value = localStorage.getItem('ngl_name') || '';
+      refs.theme.value = localStorage.getItem('ngl_theme') || 'neon';
+      refs.mood.value = localStorage.getItem('ngl_mood') || '🔥 hyped';
+      applyTheme(refs.theme.value);
+    }
+
+    function wireRealtime() {
+      state.channel = supabase
+        .channel('messages-live')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+          state.rows.unshift(payload.new);
+          if (state.rows.length > 250) state.rows.pop();
+          draw();
+          setStatus('New live message received.', 'ok');
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            refs.conn.textContent = 'Live: connected';
+            refs.conn.style.borderColor = '#2d7a63';
+          } else if (status === 'CHANNEL_ERROR') {
+            refs.conn.textContent = 'Live: error';
+            refs.conn.style.borderColor = '#8a3758';
+          }
+        });
+    }
+
+    el('post').addEventListener('click', postMessage);
+    el('reload').addEventListener('click', loadFeed);
+    el('search').addEventListener('input', draw);
+    el('sort').addEventListener('change', draw);
+    refs.theme.addEventListener('change', (e) => applyTheme(e.target.value));
+    refs.name.addEventListener('input', () => localStorage.setItem('ngl_name', refs.name.value));
+    refs.mood.addEventListener('change', () => localStorage.setItem('ngl_mood', refs.mood.value));
+    refs.msg.addEventListener('input', () => {
+      refs.remaining.textContent = `${280 - refs.msg.value.length} chars left`;
+    });
+    el('clear').addEventListener('click', () => {
+      localStorage.removeItem('ngl_name');
+      localStorage.removeItem('ngl_theme');
+      localStorage.removeItem('ngl_mood');
+      refs.name.value = '';
+      refs.theme.value = 'neon';
+      refs.mood.value = '🔥 hyped';
+      applyTheme('neon');
+      setStatus('Local preferences cleared.');
+    });
+
+    restorePrefs();
+    await loadFeed();
+    wireRealtime();
   </script>
 </body>
 </html>
