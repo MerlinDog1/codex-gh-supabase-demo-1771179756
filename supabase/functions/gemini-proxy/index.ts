@@ -27,10 +27,38 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, model = "gemini-2.0-flash" } = await req.json();
+    const { task = "text", prompt, model = "gemini-2.0-flash", aspectRatio = "16:9" } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (task === "image") {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instances: [{ prompt }],
+            parameters: { sampleCount: 1, aspectRatio },
+          }),
+        },
+      );
+
+      const data = await r.json();
+      if (!r.ok) {
+        return new Response(JSON.stringify({ error: data?.error?.message || "Imagen request failed", raw: data }), {
+          status: r.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const bytesBase64Encoded = data?.predictions?.[0]?.bytesBase64Encoded ?? "";
+      return new Response(JSON.stringify({ bytesBase64Encoded, raw: data }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
