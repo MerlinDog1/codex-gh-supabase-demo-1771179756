@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supabase Starter</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:680px;margin:40px auto;padding:0 16px}
+    input,button{padding:8px;margin:4px 0}
+    #out{white-space:pre-wrap;background:#f6f6f6;padding:12px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <h1>Supabase Starter</h1>
+  <p>Set your project URL and anon key in the script below.</p>
+  <input id="msg" placeholder="Type a message" />
+  <button id="save">Save</button>
+  <button id="load">Load</button>
+  <div id="out"></div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+    const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co'
+    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const out = document.getElementById('out')
+    const msg = document.getElementById('msg')
+
+    document.getElementById('save').onclick = async () => {
+      const text = msg.value.trim()
+      if (!text) return
+      const { error } = await supabase.from('messages').insert({ content: text })
+      out.textContent = error ? error.message : 'Saved.'
+      msg.value = ''
+    }
+
+    document.getElementById('load').onclick = async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, content, created_at')
+        .order('id', { ascending: false })
+        .limit(10)
+      out.textContent = error ? error.message : JSON.stringify(data, null, 2)
+    }
+  </script>
+</body>
+</html>
