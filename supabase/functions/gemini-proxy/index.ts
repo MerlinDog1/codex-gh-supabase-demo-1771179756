@@ -19,13 +19,8 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Missing GEMINI_API_KEY secret" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    const imagenApiKey = Deno.env.get("IMAGEN_API_KEY") || geminiApiKey;
 
     const { task = "text", prompt, model = "gemini-2.0-flash", aspectRatio = "16:9" } = await req.json();
     if (!prompt || typeof prompt !== "string") {
@@ -36,8 +31,15 @@ serve(async (req) => {
     }
 
     if (task === "image") {
+      if (!imagenApiKey) {
+        return new Response(JSON.stringify({ error: "Missing IMAGEN_API_KEY/GEMINI_API_KEY secret" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${imagenApiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -63,8 +65,15 @@ serve(async (req) => {
       });
     }
 
+    if (!geminiApiKey) {
+      return new Response(JSON.stringify({ error: "Missing GEMINI_API_KEY secret" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${geminiApiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
