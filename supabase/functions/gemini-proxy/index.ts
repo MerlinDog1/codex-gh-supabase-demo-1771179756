@@ -28,6 +28,8 @@ serve(async (req) => {
       model = "gemini-2.0-flash",
       imageModel = "gemini-3-pro-image-preview",
       aspectRatio = "16:9",
+      imageBase64,
+      imageMimeType = "image/png",
     } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
@@ -52,7 +54,14 @@ serve(async (req) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
+              contents: [{
+                parts: [
+                  { text: prompt },
+                  ...(imageBase64
+                    ? [{ inlineData: { mimeType: imageMimeType || "image/png", data: imageBase64 } }]
+                    : []),
+                ],
+              }],
               generationConfig: {
                 responseModalities: ["TEXT", "IMAGE"],
               },
