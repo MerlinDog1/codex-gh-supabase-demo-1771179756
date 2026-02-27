@@ -26,7 +26,7 @@ serve(async (req) => {
       task = "text",
       prompt,
       model = "gemini-2.0-flash",
-      imageModel = "gemini-3.1-flash-image",
+      imageModel = "gemini-3.1-flash-image-preview",
       aspectRatio = "16:9",
       imageBase64,
       imageMimeType = "image/png",
