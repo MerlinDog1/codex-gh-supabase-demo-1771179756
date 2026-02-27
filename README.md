@@ -60,6 +60,50 @@ supabase secrets set GEMINI_API_KEY=YOUR_KEY_HERE
 supabase functions deploy gemini-proxy
 ```
 
+## Trace + Upscale Relay Edge Functions
+
+Added functions:
+
+- `supabase/functions/trace-svg/index.ts`
+- `supabase/functions/upscale-image/index.ts`
+
+These functions provide the Ted mockup pipeline contract:
+
+- `trace-svg` expects `{ imageBase64, mimeType, style, traceDetail, output }` and returns `{ svg }`
+- `upscale-image` expects `{ imageBase64, mimeType, scale }` and returns `{ bytesBase64Encoded, mimeType }`
+
+Because Supabase Edge Runtime cannot reliably host local Python tracing/upscale stacks directly, both are implemented as secure relays to external services.
+
+### Required secrets
+
+```bash
+supabase secrets set TRACE_BACKEND_URL=https://your-trace-service.example/api/trace
+supabase secrets set TRACE_BACKEND_TOKEN=replace_with_trace_service_bearer_token
+supabase secrets set UPSCALE_BACKEND_URL=https://your-upscale-service.example/api/upscale
+supabase secrets set UPSCALE_BACKEND_TOKEN=replace_with_upscale_service_bearer_token
+```
+
+If any relay secret is missing, the function returns HTTP `501` with a clear configuration error.
+
+### Deploy
+
+```bash
+supabase functions deploy trace-svg
+supabase functions deploy upscale-image
+```
+
+### Optional quick test
+
+```bash
+curl -i https://<project-ref>.functions.supabase.co/trace-svg \
+  -H 'content-type: application/json' \
+  --data '{"imageBase64":"...","mimeType":"image/png","style":"crosshatch","traceDetail":"4K","output":"svg"}'
+
+curl -i https://<project-ref>.functions.supabase.co/upscale-image \
+  -H 'content-type: application/json' \
+  --data '{"imageBase64":"...","mimeType":"image/png","scale":2}'
+```
+
 ### Call from frontend
 
 ```js
