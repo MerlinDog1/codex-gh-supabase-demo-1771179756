@@ -74,12 +74,36 @@ These functions provide the Ted mockup pipeline contract:
 
 Because Supabase Edge Runtime cannot reliably host local Python tracing/upscale stacks directly, both are implemented as secure relays to external services.
 
-### Required secrets
+### Foundry backend (exact V8 trace script)
+
+A production-ready backend scaffold is included at:
+
+- `tools/foundry-backend/app.py`
+
+It provides:
+
+- `POST /trace` → runs your exact `pro_foundry_v8.py`
+- `POST /upscale` → 2× upscale (Pillow/Lanczos)
+
+Run it:
 
 ```bash
-supabase secrets set TRACE_BACKEND_URL=https://your-trace-service.example/api/trace
+cd tools/foundry-backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# edit .env (token + TRACE_SCRIPT_PATH)
+set -a; source .env; set +a
+python3 app.py
+```
+
+### Required Supabase secrets
+
+```bash
+supabase secrets set TRACE_BACKEND_URL=https://your-backend.example/trace
 supabase secrets set TRACE_BACKEND_TOKEN=replace_with_trace_service_bearer_token
-supabase secrets set UPSCALE_BACKEND_URL=https://your-upscale-service.example/api/upscale
+supabase secrets set UPSCALE_BACKEND_URL=https://your-backend.example/upscale
 supabase secrets set UPSCALE_BACKEND_TOKEN=replace_with_upscale_service_bearer_token
 ```
 
